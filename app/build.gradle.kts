@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "dev.lhrb.peilomat"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "dev.lhrb.peilomat"
