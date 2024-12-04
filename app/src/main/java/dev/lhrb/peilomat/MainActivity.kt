@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,13 +37,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import dev.lhrb.peilomat.ui.theme.PeilomatTheme
-import java.nio.file.WatchEvent
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +62,7 @@ class MainActivity : ComponentActivity() {
         fusedLocationClient.lastLocation.addOnSuccessListener {
             location -> Log.d("Location", "last location $location")
         }
+        val peilomatViewModel = viewModels<PeilomatViewModel>().value
 
         enableEdgeToEdge()
         setContent {
@@ -81,7 +82,10 @@ class MainActivity : ComponentActivity() {
                     },
                     modifier = Modifier.fillMaxSize()) { innerPadding ->
                     CheckLocationPermission()
-                    Greeting(modifier = Modifier.padding(innerPadding))
+                    Greeting(
+                        viewModel = peilomatViewModel,
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
         }
@@ -111,13 +115,15 @@ fun CheckLocationPermission() {
 }
 
 @Composable
-fun Greeting(modifier: Modifier = Modifier) {
-    val lat = 50.935173
-    val lon = 6.953101
-    val RW = "3 84 000"
-    val HW = "55 67 999"
+fun Greeting(
+    viewModel: PeilomatViewModel,
+    modifier: Modifier = Modifier
+    ) {
+    val peilomatUiState by viewModel.uiState.collectAsState()
+
     Column(modifier = modifier.padding(8.dp)) {
-        CurrentPosition(lat, lon, RW, HW)
+        val (lat, lon, rw, hw) = peilomatUiState.currentPositionData
+        CurrentPosition(lat, lon, rw, hw, viewModel::refresh)
 
         HorizontalDivider(
             thickness = 2.dp,
@@ -125,7 +131,11 @@ fun Greeting(modifier: Modifier = Modifier) {
                 .padding(top = 16.dp, bottom = 12.dp)
         )
 
-        TransformRWHWtoLatLon()
+        TransformRWHWtoLatLon(
+            lat = peilomatUiState.convertRwHwToLatLonData.lat,
+            lon = peilomatUiState.convertRwHwToLatLonData.lon,
+            onClickConvert = viewModel::transformHwRw
+        )
 
         HorizontalDivider(
             thickness = 2.dp,
@@ -133,14 +143,22 @@ fun Greeting(modifier: Modifier = Modifier) {
                 .padding(top = 16.dp, bottom = 12.dp)
         )
 
-        TransformAngleAndDistanceToLatLon()
+        TransformAngleAndDistanceToLatLon(
+            lat = peilomatUiState.convertAngleAndDistanceToLatLonData.lat,
+            lon = peilomatUiState.convertAngleAndDistanceToLatLonData.lon,
+            onClickConvert = viewModel::transformAngleDistance
+        )
     }
 }
 
 
 
 @Composable
-fun TransformAngleAndDistanceToLatLon() {
+fun TransformAngleAndDistanceToLatLon(
+    lat: Double,
+    lon: Double,
+    onClickConvert: (useAngle: Boolean, angle: String, distance: String) -> Unit
+) {
     var useAngle by remember { mutableStateOf(true) }
     var distance by remember { mutableStateOf("") }
     var angle by remember { mutableStateOf("") }
@@ -199,7 +217,7 @@ fun TransformAngleAndDistanceToLatLon() {
         }
 
         OutlinedTextField(
-            value = "",
+            value = "$lat,$lon",
             onValueChange = {},
             label = { Text("lat,lon") },
             readOnly = true,
@@ -207,7 +225,7 @@ fun TransformAngleAndDistanceToLatLon() {
         )
 
         Button(
-            onClick = {},
+            onClick = { onClickConvert(useAngle, angle, distance) },
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
         ) {
             Text("Konvertieren")
@@ -217,7 +235,11 @@ fun TransformAngleAndDistanceToLatLon() {
 }
 
 @Composable
-fun TransformRWHWtoLatLon() {
+fun TransformRWHWtoLatLon(
+    lat: Double,
+    lon: Double,
+    onClickConvert: (rw: String, hw: String) -> Unit
+) {
     var rw by remember { mutableStateOf("") }
     var hw by remember { mutableStateOf("") }
 
@@ -253,7 +275,7 @@ fun TransformRWHWtoLatLon() {
         }
 
         OutlinedTextField(
-            value = "",
+            value = "$lat,$lon",
             onValueChange = {},
             label = { Text("lat,lon") },
             readOnly = true,
@@ -261,7 +283,7 @@ fun TransformRWHWtoLatLon() {
         )
 
         Button(
-            onClick = {},
+            onClick = { onClickConvert(rw, hw) },
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
         ) {
             Text("Konvertieren")
@@ -275,7 +297,8 @@ fun CurrentPosition(
     lat: Double,
     lon: Double,
     rW: String,
-    hW:String
+    hW: String,
+    onClickRefresh: () -> Unit
 ) {
     Column {
         Text("Aktuelle Position:")
@@ -290,7 +313,7 @@ fun CurrentPosition(
                     .padding(end = 4.dp)
             )
             FilledIconButton(
-                onClick = { },
+                onClick = { onClickRefresh() },
                 modifier = Modifier
                     .weight(0.125f)
                     .align(Alignment.CenterVertically)
@@ -334,7 +357,8 @@ fun CurrentPosition(
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
+    val viewModel = PeilomatViewModel()
     PeilomatTheme {
-        Greeting()
+        Greeting(viewModel)
     }
 }
