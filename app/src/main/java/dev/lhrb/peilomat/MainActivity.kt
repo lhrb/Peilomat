@@ -16,14 +16,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
@@ -32,7 +40,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import dev.lhrb.peilomat.ui.theme.PeilomatTheme
+import java.nio.file.WatchEvent
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -121,12 +132,88 @@ fun Greeting(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .padding(top = 16.dp, bottom = 12.dp)
         )
+
+        TransformAngleAndDistanceToLatLon()
     }
 }
 
+
+
 @Composable
 fun TransformAngleAndDistanceToLatLon() {
+    var useAngle by remember { mutableStateOf(true) }
+    var distance by remember { mutableStateOf("") }
+    var angle by remember { mutableStateOf("") }
 
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                text = "Gradzahl verwenden: ",
+                modifier = Modifier.align(alignment = Alignment.CenterVertically)
+            )
+            Switch(
+                checked = useAngle,
+                onCheckedChange = { useAngle = it },
+                thumbContent = if (useAngle) {
+                    {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(SwitchDefaults.IconSize),
+                        )
+                    }
+                } else {
+                    null
+                }
+            )
+        }
+
+        Row(horizontalArrangement = Arrangement.SpaceEvenly) {
+
+            OutlinedTextField(
+                value = angle,
+                onValueChange = { angle = it },
+                label = { Text(text = if (useAngle) "Grad" else "MZ") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp)
+
+            )
+
+            OutlinedTextField(
+                value = distance,
+                onValueChange = { distance = it },
+                label = { Text("Distanz in m") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp)
+            )
+        }
+
+        OutlinedTextField(
+            value = "",
+            onValueChange = {},
+            label = { Text("lat,lon") },
+            readOnly = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Button(
+            onClick = {},
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+        ) {
+            Text("Konvertieren")
+        }
+
+    }
 }
 
 @Composable
@@ -175,9 +262,9 @@ fun TransformRWHWtoLatLon() {
 
         Button(
             onClick = {},
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
         ) {
-            Text("Convert")
+            Text("Konvertieren")
         }
     }
 }
@@ -190,16 +277,33 @@ fun CurrentPosition(
     rW: String,
     hW:String
 ) {
-    Column() {
+    Column {
         Text("Aktuelle Position:")
+        Row(horizontalArrangement = Arrangement.SpaceEvenly) {
+            OutlinedTextField(
+                value = "$lat,$lon",
+                onValueChange = {},
+                label = { Text("lat,lon") },
+                readOnly = true,
+                modifier = Modifier
+                    .weight(0.875f)
+                    .padding(end = 4.dp)
+            )
+            FilledIconButton(
+                onClick = { },
+                modifier = Modifier
+                    .weight(0.125f)
+                    .align(Alignment.CenterVertically)
+                    .padding(start = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Refresh",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
 
-        OutlinedTextField(
-            value = "$lat,$lon",
-            onValueChange = {},
-            label = { Text("lat,lon") },
-            readOnly = true,
-            modifier = Modifier.fillMaxWidth()
-        )
 
         Row(horizontalArrangement = Arrangement.SpaceEvenly) {
 
