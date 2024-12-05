@@ -40,7 +40,7 @@ class PeilomatViewModel(private val peilomatBL: PeilomatBL) : ViewModel() {
             }
         }
     }
-    
+
     fun refresh() {
         Log.d("CLICK", "refresh clicked")
         viewModelScope.launch {
@@ -51,8 +51,14 @@ class PeilomatViewModel(private val peilomatBL: PeilomatBL) : ViewModel() {
         }
     }
 
-    fun transformHwRw(rw: String, hw: String) {
-        Log.d("CLICK", "convert clicked rw: $rw hw: $hw")
+    fun transformHwRw(easting: String, northing: String) {
+        Log.d("CLICK", "convert clicked rw: $easting hw: $northing")
+
+        // refactor parsing into testable context
+        val coordinates = convertUTMtoLatLon(easting.toInt(), northing.toInt())
+        _uiState.update {
+            it.copy(convertRwHwToLatLonData = coordinates)
+        }
     }
 
     fun transformAngleDistance(useAngle: Boolean, angle: String, distance: String) {

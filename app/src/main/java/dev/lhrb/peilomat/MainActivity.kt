@@ -239,8 +239,8 @@ fun TransformRWHWtoLatLon(
     lon: Double,
     onClickConvert: (rw: String, hw: String) -> Unit
 ) {
-    var rw by remember { mutableStateOf("") }
-    var hw by remember { mutableStateOf("") }
+    var easting by remember { mutableStateOf("") }
+    var northing by remember { mutableStateOf("") }
 
     Column {
         Text("Convert RW,HW to Lat,Lon")
@@ -248,8 +248,8 @@ fun TransformRWHWtoLatLon(
         Row(horizontalArrangement = Arrangement.SpaceEvenly) {
 
             OutlinedTextField(
-                value = rw,
-                onValueChange = { rw = it },
+                value = easting,
+                onValueChange = { easting = it },
                 label = { Text("RW") },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number
@@ -261,8 +261,8 @@ fun TransformRWHWtoLatLon(
             )
 
             OutlinedTextField(
-                value = hw,
-                onValueChange = { hw = it },
+                value = northing,
+                onValueChange = { northing = it },
                 label = { Text("HW") },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number
@@ -282,7 +282,7 @@ fun TransformRWHWtoLatLon(
         )
 
         Button(
-            onClick = { onClickConvert(rw, hw) },
+            onClick = { onClickConvert(easting, northing) },
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
         ) {
             Text("Konvertieren")

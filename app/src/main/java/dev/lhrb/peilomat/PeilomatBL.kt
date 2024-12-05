@@ -46,6 +46,18 @@ fun convertLatLonToUTM(lat: Double, lon: Double) : UTM32 {
     return UTM32(easting = easting, northing = northing)
 }
 
-fun convertUTMtoLatLon(easting: Int, northing: Int) {
+fun convertUTMtoLatLon(easting: Int, northing: Int) : Coordinates {
+    val crsFactory = CRSFactory()
+    val crsWGS84 = crsFactory.createFromName("epsg:4326")
+    val crsUTM = crsFactory.createFromName("epsg:32632")
 
+    val ctFactory = CoordinateTransformFactory()
+    val wgsToUtm = ctFactory.createTransform(crsUTM, crsWGS84)
+
+    val result = ProjCoordinate()
+    wgsToUtm.transform(ProjCoordinate(easting.toDouble(), northing.toDouble()), result)
+
+    val lat = String.format("%.6f", result.y).replace(",", ".").toDouble()
+    val lon = String.format("%.6f", result.x).replace(",", ".").toDouble()
+    return Coordinates(lat = lat, lon = lon)
 }
