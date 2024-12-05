@@ -15,20 +15,15 @@ data class CurrentPositionData(
     val hw: String = ""
 )
 
-data class ConvertRwHwToLatLonData(
-    val lat: Double = 0.0,
-    val lon: Double = 0.0
-)
-
-data class ConvertAngleAndDistanceToLatLonData(
+data class Coordinates(
     val lat: Double = 0.0,
     val lon: Double = 0.0
 )
 
 data class PeilomatUiState(
     val currentPositionData: CurrentPositionData = CurrentPositionData(),
-    val convertRwHwToLatLonData: ConvertRwHwToLatLonData = ConvertRwHwToLatLonData(),
-    val convertAngleAndDistanceToLatLonData: ConvertAngleAndDistanceToLatLonData = ConvertAngleAndDistanceToLatLonData()
+    val convertRwHwToLatLonData: Coordinates = Coordinates(),
+    val convertAngleAndDistanceToLatLonData: Coordinates = Coordinates()
 )
 
 class PeilomatViewModel : ViewModel() {
