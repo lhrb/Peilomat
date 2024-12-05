@@ -156,16 +156,75 @@ fun Greeting(
 fun TransformAngleAndDistanceToLatLon(
     lat: Double,
     lon: Double,
-    onClickConvert: (useAngle: Boolean, angle: String, distance: String) -> Unit
+    onClickConvert: (useAngle: Boolean,
+                     angle: String,
+                     distance: String,
+                     useGivenPoints: Boolean,
+                     easting: String,
+                     northing: String
+            ) -> Unit
 ) {
     var useAngle by remember { mutableStateOf(true) }
     var distance by remember { mutableStateOf("") }
     var angle by remember { mutableStateOf("") }
+    var easting by remember { mutableStateOf("") }
+    var northing by remember { mutableStateOf("") }
+    var useGivenPoints by remember { mutableStateOf(false) }
 
     Column {
         Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            OutlinedTextField(
+                value = easting,
+                onValueChange = { easting = it },
+                label = { Text("RW") },
+                readOnly = !useGivenPoints,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp)
+
+            )
+
+            OutlinedTextField(
+                value = northing,
+                onValueChange = { northing = it },
+                label = { Text("HW") },
+                readOnly = !useGivenPoints,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp, end = 4.dp)
+            )
+
+            Switch(
+                checked = useGivenPoints,
+                onCheckedChange = { useGivenPoints = it },
+                modifier = Modifier.align(alignment = Alignment.CenterVertically),
+                thumbContent = if (useGivenPoints) {
+                    {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(SwitchDefaults.IconSize),
+                        )
+                    }
+                } else {
+                    null
+                }
+            )
+        }
+
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween) {
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Text(
                 text = "Gradzahl verwenden: ",
                 modifier = Modifier.align(alignment = Alignment.CenterVertically)
@@ -224,7 +283,7 @@ fun TransformAngleAndDistanceToLatLon(
         )
 
         Button(
-            onClick = { onClickConvert(useAngle, angle, distance) },
+            onClick = { onClickConvert(useAngle, angle, distance, useGivenPoints, easting, northing) },
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
         ) {
             Text("Konvertieren")
@@ -334,7 +393,7 @@ fun CurrentPosition(
                 onValueChange = {},
                 label = { Text("RW") },
                 readOnly = true,
-                modifier = Modifier22
+                modifier = Modifier
                     .weight(1f)
                     .padding(end = 4.dp)
 

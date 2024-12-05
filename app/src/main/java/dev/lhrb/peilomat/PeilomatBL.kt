@@ -27,13 +27,21 @@ class PeilomatBL(private val locationProvider: LocationProvider) {
     suspend fun calculatePoint(
         useAngle: Boolean,
         angle: String,
-        distance: String
+        distance: String,
+        useGivenPoints: Boolean,
+        easting: String,
+        northing: String
     ) : Coordinates {
         val parsedAngle = angle.toDouble()
         val parsedDistance = distance.toDouble()
         val calculatedAngle = if (useAngle) parsedAngle else marschzahlToAngle(parsedAngle)
-        val coordinates = locationProvider.getLocation()
-        val converted = convertLatLonToUTM(coordinates.lat, coordinates.lon)
+
+        val converted = if (useGivenPoints) {
+            UTM32(easting.toInt(), northing.toInt())
+        } else {
+            val coordinates = locationProvider.getLocation()
+            convertLatLonToUTM(coordinates.lat, coordinates.lon)
+        }
 
         val newPoint = calculatePoint(
             converted.easting,
