@@ -3,14 +3,12 @@ package dev.lhrb.peilomat
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,6 +47,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.location.LocationServices
 import dev.lhrb.peilomat.ui.theme.PeilomatTheme
 
@@ -59,10 +58,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        fusedLocationClient.lastLocation.addOnSuccessListener {
-            location -> Log.d("Location", "last location $location")
-        }
-        val peilomatViewModel = viewModels<PeilomatViewModel>().value
+        val locationProvider = LocationProviderImpl(fusedLocationClient)
+        val peilomatBL = PeilomatBL(locationProvider)
+        val factor = PeilomatViewModelFactory(peilomatBL)
+        val peilomatViewModel = ViewModelProvider(this, factor).get(PeilomatViewModel::class.java)
 
         enableEdgeToEdge()
         setContent {
@@ -296,8 +295,8 @@ fun TransformRWHWtoLatLon(
 fun CurrentPosition(
     lat: Double,
     lon: Double,
-    rW: String,
-    hW: String,
+    easting: Int,
+    northing: Int,
     onClickRefresh: () -> Unit
 ) {
     Column {
@@ -331,7 +330,7 @@ fun CurrentPosition(
         Row(horizontalArrangement = Arrangement.SpaceEvenly) {
 
             OutlinedTextField(
-                value = rW,
+                value = "$easting",
                 onValueChange = {},
                 label = { Text("RW") },
                 readOnly = true,
@@ -342,7 +341,7 @@ fun CurrentPosition(
             )
 
             OutlinedTextField(
-                value = hW,
+                value = "$northing",
                 onValueChange = {},
                 label = { Text("HW") },
                 readOnly = true,
@@ -357,7 +356,13 @@ fun CurrentPosition(
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    val viewModel = PeilomatViewModel()
+    val peilomatBL = PeilomatBL(object : LocationProvider {
+        override suspend fun getLocation(): Coordinates {
+            return Coordinates(1.0, 1.0)
+        }
+    })
+    val viewModel = PeilomatViewModel(peilomatBL)
+
     PeilomatTheme {
         Greeting(viewModel)
     }
