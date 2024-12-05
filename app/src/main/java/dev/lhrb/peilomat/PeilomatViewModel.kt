@@ -63,6 +63,12 @@ class PeilomatViewModel(private val peilomatBL: PeilomatBL) : ViewModel() {
 
     fun transformAngleDistance(useAngle: Boolean, angle: String, distance: String) {
         Log.d("CLICK", "convert clicked useAngle: $useAngle angle: $angle distance: $distance")
+        viewModelScope.launch {
+            val newPoint = peilomatBL.calculatePoint(useAngle, angle, distance)
+            _uiState.update {
+                it.copy(convertAngleAndDistanceToLatLonData = newPoint)
+            }
+        }
     }
 }
 

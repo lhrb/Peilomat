@@ -1,5 +1,7 @@
 package dev.lhrb.peilomat
 
+import android.location.Location
+import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 
@@ -20,5 +22,21 @@ class ExampleInstrumentedTest {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals("dev.lhrb.peilomat", appContext.packageName)
+    }
+
+    @Test
+    fun distanceBetweenPoints() {
+        val l1 = Location("test").apply {
+            latitude = 50.252753
+            longitude = 7.38719
+        }
+
+        val l2 = Location("test").apply {
+            latitude = 50.252947
+            longitude = 7.38684
+        }
+
+        Log.d("DISTANCE", "distance: ${l1.distanceTo(l2)}")
+
     }
 }

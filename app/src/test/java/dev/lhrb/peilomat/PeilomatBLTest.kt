@@ -2,6 +2,8 @@ package dev.lhrb.peilomat
 
 import junit.framework.TestCase.assertEquals
 import org.junit.Test
+import kotlin.math.cos
+import kotlin.math.sqrt
 
 class PeilomatBLTest {
 
@@ -20,5 +22,23 @@ class PeilomatBLTest {
         assertEquals(7.372818, result.lon, 0.000001)
     }
 
+    @Test
+    fun `should calculate point with angle and distance`() {
+        val x = 1
+        val y = 1
+        val bearing = 45.0
+        val distance = sqrt(2.0)
 
+        val expected = UTM32(2,2)
+        val result = calculatePoint(x,y,bearing,distance)
+
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun `should convert mz to angle`() {
+        val mz = 32.0
+        val result = marschzahlToAngle(mz)
+        assertEquals(180.0, result, 0.1)
+    }
 }

@@ -334,7 +334,7 @@ fun CurrentPosition(
                 onValueChange = {},
                 label = { Text("RW") },
                 readOnly = true,
-                modifier = Modifier
+                modifier = Modifier22
                     .weight(1f)
                     .padding(end = 4.dp)
 

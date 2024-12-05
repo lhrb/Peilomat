@@ -1,9 +1,15 @@
 package dev.lhrb.peilomat
 
+import androidx.compose.foundation.pager.PagerSnapDistance
 import org.locationtech.proj4j.CRSFactory
 import org.locationtech.proj4j.CoordinateReferenceSystem
 import org.locationtech.proj4j.CoordinateTransformFactory
 import org.locationtech.proj4j.ProjCoordinate
+import java.util.Locale
+import kotlin.math.asin
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 
 class PeilomatBL(private val locationProvider: LocationProvider) {
 
@@ -18,6 +24,30 @@ class PeilomatBL(private val locationProvider: LocationProvider) {
         )
     }
 
+    suspend fun calculatePoint(
+        useAngle: Boolean,
+        angle: String,
+        distance: String
+    ) : Coordinates {
+        val parsedAngle = angle.toDouble()
+        val parsedDistance = distance.toDouble()
+        val calculatedAngle = if (useAngle) parsedAngle else marschzahlToAngle(parsedAngle)
+        val coordinates = locationProvider.getLocation()
+        val converted = convertLatLonToUTM(coordinates.lat, coordinates.lon)
+
+        val newPoint = calculatePoint(
+            converted.easting,
+            converted.northing,
+            calculatedAngle,
+            parsedDistance
+        )
+
+        return convertUTMtoLatLon(newPoint.easting, newPoint.northing)
+    }
+}
+
+fun marschzahlToAngle(mz: Double) : Double {
+    return mz * 360.0 / 64.0;
 }
 
 
@@ -57,7 +87,30 @@ fun convertUTMtoLatLon(easting: Int, northing: Int) : Coordinates {
     val result = ProjCoordinate()
     wgsToUtm.transform(ProjCoordinate(easting.toDouble(), northing.toDouble()), result)
 
-    val lat = String.format("%.6f", result.y).replace(",", ".").toDouble()
-    val lon = String.format("%.6f", result.x).replace(",", ".").toDouble()
+    val lat = formatToSixDigits(result.y)
+    val lon = formatToSixDigits(result.x)
     return Coordinates(lat = lat, lon = lon)
+}
+
+/**
+ * formats a double to a number with 6 digits after the decimal point
+ */
+fun formatToSixDigits(num: Double) : Double {
+    // use us locale for since they use a dot instead of comma ;)
+    return String.format(Locale.US, "%.6f", num).toDouble()
+}
+
+fun calculatePoint(
+    x: Int,
+    y: Int,
+    bearing: Double,
+    distance: Double
+) : UTM32 {
+    val bearingAsRad = Math.toRadians(bearing)
+    val _x = x + distance * cos(bearingAsRad)
+    val _y = y + distance * sin(bearingAsRad)
+    val newX = Math.round(_x).toInt()
+    val newY = Math.round(_y).toInt()
+
+    return UTM32(newX,newY)
 }
