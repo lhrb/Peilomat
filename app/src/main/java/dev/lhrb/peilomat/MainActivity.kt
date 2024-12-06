@@ -2,6 +2,7 @@ package dev.lhrb.peilomat
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.graphics.Paint
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -9,7 +10,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +25,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
@@ -37,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -79,7 +85,8 @@ class MainActivity : ComponentActivity() {
                         )
 
                     },
-                    modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    modifier = Modifier.fillMaxSize()
+                ) { innerPadding ->
                     CheckLocationPermission()
                     Greeting(
                         viewModel = peilomatViewModel,
@@ -106,7 +113,10 @@ fun CheckLocationPermission() {
     }
 
     LaunchedEffect(Unit) {
-        val currentPermissionState = ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION)
+        val currentPermissionState = ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        )
         if (PackageManager.PERMISSION_GRANTED != currentPermissionState) {
             locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
         }
@@ -117,10 +127,18 @@ fun CheckLocationPermission() {
 fun Greeting(
     viewModel: PeilomatViewModel,
     modifier: Modifier = Modifier
-    ) {
+) {
     val peilomatUiState by viewModel.uiState.collectAsState()
 
     Column(modifier = modifier.padding(8.dp)) {
+        ChooseCRS(peilomatUiState.crs, viewModel::setCRS)
+
+        HorizontalDivider(
+            thickness = 2.dp,
+            modifier = Modifier
+                .padding(top = 16.dp, bottom = 12.dp)
+        )
+
         val (lat, lon, rw, hw) = peilomatUiState.currentPositionData
         CurrentPosition(lat, lon, rw, hw, viewModel::refresh)
 
@@ -150,19 +168,64 @@ fun Greeting(
     }
 }
 
+@Composable
+fun ChooseCRS(
+    currentCrs: CRS,
+    onClickSetCRS: (crs: CRS) -> Unit
+) {
+    val isDropDownExpanded = remember { mutableStateOf(false) }
+    val itemPosition = remember { mutableIntStateOf(0) }
+    val crs = listOf(CRS.EPSG32632, CRS.EPSG31468)
 
+    itemPosition.intValue = crs.indexOf(currentCrs)
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp, bottom = 4.dp)
+                .clickable {
+                    isDropDownExpanded.value = true
+                }
+        ) {
+            Text("Projection: ")
+
+            Text(text = crs[itemPosition.intValue].name)
+        }
+
+        DropdownMenu(
+            modifier = Modifier.align(Alignment.TopEnd),
+            expanded = isDropDownExpanded.value,
+            onDismissRequest = {
+                isDropDownExpanded.value = false
+            }) {
+            crs.forEachIndexed { index, crs ->
+                DropdownMenuItem(text = {
+                    Text(text = crs.name)
+                },
+                    onClick = {
+                        isDropDownExpanded.value = false
+                        onClickSetCRS(crs)
+                    })
+            }
+        }
+    }
+
+}
 
 @Composable
 fun TransformAngleAndDistanceToLatLon(
     lat: Double,
     lon: Double,
-    onClickConvert: (useAngle: Boolean,
-                     angle: String,
-                     distance: String,
-                     useGivenPoints: Boolean,
-                     easting: String,
-                     northing: String
-            ) -> Unit
+    onClickConvert: (
+        useAngle: Boolean,
+        angle: String,
+        distance: String,
+        useGivenPoints: Boolean,
+        easting: String,
+        northing: String
+    ) -> Unit
 ) {
     var useAngle by remember { mutableStateOf(true) }
     var distance by remember { mutableStateOf("") }
@@ -173,7 +236,9 @@ fun TransformAngleAndDistanceToLatLon(
 
     Column {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             OutlinedTextField(
@@ -283,8 +348,19 @@ fun TransformAngleAndDistanceToLatLon(
         )
 
         Button(
-            onClick = { onClickConvert(useAngle, angle, distance, useGivenPoints, easting, northing) },
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+            onClick = {
+                onClickConvert(
+                    useAngle,
+                    angle,
+                    distance,
+                    useGivenPoints,
+                    easting,
+                    northing
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
         ) {
             Text("Konvertieren")
         }
@@ -342,7 +418,9 @@ fun TransformRWHWtoLatLon(
 
         Button(
             onClick = { onClickConvert(easting, northing) },
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
         ) {
             Text("Konvertieren")
         }

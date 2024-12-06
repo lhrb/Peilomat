@@ -25,7 +25,8 @@ data class Coordinates(
 data class PeilomatUiState(
     val currentPositionData: CurrentPositionData = CurrentPositionData(),
     val convertRwHwToLatLonData: Coordinates = Coordinates(),
-    val convertAngleAndDistanceToLatLonData: Coordinates = Coordinates()
+    val convertAngleAndDistanceToLatLonData: Coordinates = Coordinates(),
+    val crs: CRS = CRS.EPSG32632
 )
 
 class PeilomatViewModel(private val peilomatBL: PeilomatBL) : ViewModel() {
@@ -34,7 +35,7 @@ class PeilomatViewModel(private val peilomatBL: PeilomatBL) : ViewModel() {
 
     init {
         viewModelScope.launch {
-            val currentPosition = peilomatBL.getCurrentPosition()
+            val currentPosition = peilomatBL.getCurrentPosition(uiState.value.crs)
             _uiState.update {
                 it.copy(currentPositionData = currentPosition)
             }
@@ -44,7 +45,7 @@ class PeilomatViewModel(private val peilomatBL: PeilomatBL) : ViewModel() {
     fun refresh() {
         Log.d("CLICK", "refresh clicked")
         viewModelScope.launch {
-            val currentPosition = peilomatBL.getCurrentPosition()
+            val currentPosition = peilomatBL.getCurrentPosition(uiState.value.crs)
             _uiState.update {
                 it.copy(currentPositionData = currentPosition)
             }
@@ -55,7 +56,11 @@ class PeilomatViewModel(private val peilomatBL: PeilomatBL) : ViewModel() {
         Log.d("CLICK", "convert clicked rw: $easting hw: $northing")
 
         // refactor parsing into testable context
-        val coordinates = convertUTMtoLatLon(easting.toInt(), northing.toInt())
+        val coordinates = convertUTMtoLatLon(
+            easting.toInt(),
+            northing.toInt(),
+            uiState.value.crs
+        )
         _uiState.update {
             it.copy(convertRwHwToLatLonData = coordinates)
         }
@@ -77,12 +82,17 @@ class PeilomatViewModel(private val peilomatBL: PeilomatBL) : ViewModel() {
                 distance,
                 useGivenPoints,
                 easting,
-                northing
+                northing,
+                uiState.value.crs
             )
             _uiState.update {
                 it.copy(convertAngleAndDistanceToLatLonData = newPoint)
             }
         }
+    }
+
+    fun setCRS(crs: CRS) {
+        _uiState.update { it.copy(crs = crs) }
     }
 }
 

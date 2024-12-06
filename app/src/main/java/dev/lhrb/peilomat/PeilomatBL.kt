@@ -11,11 +11,33 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
+/**
+ * longitude = easting (RW)
+ * latitude = northing (HW)
+ *
+ * we are only interested in m precision
+ */
+data class UTM32(val easting: Int, val northing: Int)
+
+sealed class CRS(val name: String, val epsg: String) {
+    object EPSG31468 : CRS(name = "Gauß-Krüger", epsg = "epsg:31468")
+    object EPSG32632 : CRS(name ="UTM", epsg = "epsg:32632")
+
+    companion object {
+        // Factory method to create a CRS safely
+        fun fromName(name: String): CRS? = when (name) {
+            EPSG31468.name -> EPSG31468
+            EPSG32632.name -> EPSG32632
+            else -> null
+        }
+    }
+}
+
 class PeilomatBL(private val locationProvider: LocationProvider) {
 
-    suspend fun getCurrentPosition() : CurrentPositionData {
+    suspend fun getCurrentPosition(targetCRS: CRS) : CurrentPositionData {
         val coordinates = locationProvider.getLocation()
-        val converted = convertLatLonToUTM(coordinates.lat, coordinates.lon)
+        val converted = convertLatLonToUTM(coordinates.lat, coordinates.lon, targetCRS)
         return CurrentPositionData(
             lat = coordinates.lat,
             lon = coordinates.lon,
@@ -30,7 +52,8 @@ class PeilomatBL(private val locationProvider: LocationProvider) {
         distance: String,
         useGivenPoints: Boolean,
         easting: String,
-        northing: String
+        northing: String,
+        targetCRS: CRS
     ) : Coordinates {
         val parsedAngle = angle.toDouble()
         val parsedDistance = distance.toDouble()
@@ -40,7 +63,7 @@ class PeilomatBL(private val locationProvider: LocationProvider) {
             UTM32(easting.toInt(), northing.toInt())
         } else {
             val coordinates = locationProvider.getLocation()
-            convertLatLonToUTM(coordinates.lat, coordinates.lon)
+            convertLatLonToUTM(coordinates.lat, coordinates.lon, targetCRS)
         }
 
         val newPoint = calculatePoint(
@@ -50,7 +73,7 @@ class PeilomatBL(private val locationProvider: LocationProvider) {
             parsedDistance
         )
 
-        return convertUTMtoLatLon(newPoint.easting, newPoint.northing)
+        return convertUTMtoLatLon(newPoint.easting, newPoint.northing, targetCRS)
     }
 }
 
@@ -58,19 +81,14 @@ fun marschzahlToAngle(mz: Double) : Double {
     return mz * 360.0 / 64.0;
 }
 
-
-/**
- * longitude = easting (RW)
- * latitude = northing (HW)
- *
- * we are only interested in m precision
- */
-data class UTM32(val easting: Int, val northing: Int)
-
-fun convertLatLonToUTM(lat: Double, lon: Double) : UTM32 {
+fun convertLatLonToUTM(
+    lat: Double,
+    lon: Double,
+    targetCRS: CRS = CRS.EPSG32632
+) : UTM32 {
     val crsFactory = CRSFactory()
     val crsWGS84 = crsFactory.createFromName("epsg:4326")
-    val crsUTM = crsFactory.createFromName("epsg:32632")
+    val crsUTM = crsFactory.createFromName(targetCRS.epsg)
 
     val ctFactory = CoordinateTransformFactory()
     val wgsToUtm = ctFactory.createTransform(crsWGS84, crsUTM)
@@ -84,10 +102,14 @@ fun convertLatLonToUTM(lat: Double, lon: Double) : UTM32 {
     return UTM32(easting = easting, northing = northing)
 }
 
-fun convertUTMtoLatLon(easting: Int, northing: Int) : Coordinates {
+fun convertUTMtoLatLon(
+    easting: Int,
+    northing: Int,
+    targetCRS: CRS = CRS.EPSG32632
+) : Coordinates {
     val crsFactory = CRSFactory()
     val crsWGS84 = crsFactory.createFromName("epsg:4326")
-    val crsUTM = crsFactory.createFromName("epsg:32632")
+    val crsUTM = crsFactory.createFromName(targetCRS.epsg)
 
     val ctFactory = CoordinateTransformFactory()
     val wgsToUtm = ctFactory.createTransform(crsUTM, crsWGS84)
