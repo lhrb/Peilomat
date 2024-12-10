@@ -1,13 +1,9 @@
 package dev.lhrb.peilomat
 
-import androidx.compose.foundation.pager.PagerSnapDistance
 import org.locationtech.proj4j.CRSFactory
-import org.locationtech.proj4j.CoordinateReferenceSystem
 import org.locationtech.proj4j.CoordinateTransformFactory
 import org.locationtech.proj4j.ProjCoordinate
 import java.util.Locale
-import kotlin.math.asin
-import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -20,24 +16,19 @@ import kotlin.math.sin
 data class UTM32(val easting: Int, val northing: Int)
 
 sealed class CRS(val name: String, val epsg: String) {
-    object EPSG31468 : CRS(name = "Gauß-Krüger", epsg = "epsg:31468")
+    object EPSG31466 : CRS(name = "Gauß-Krüger 6° EZ", epsg = "epsg:31466")
+    object EPSG31467 : CRS(name = "Gauß-Krüger 3° EZ", epsg = "epsg:31467")
+    object EPSG31468 : CRS(name = "Gauß-Krüger 9° EZ", epsg = "epsg:31468")
+    object EPSG31469 : CRS(name = "Gauß-Krüger 12° EZ", epsg = "epsg:31469")
+    object EPSG31470 : CRS(name = "Gauß-Krüger 15° EZ", epsg = "epsg:31470")
     object EPSG32632 : CRS(name ="UTM", epsg = "epsg:32632")
-
-    companion object {
-        // Factory method to create a CRS safely
-        fun fromName(name: String): CRS? = when (name) {
-            EPSG31468.name -> EPSG31468
-            EPSG32632.name -> EPSG32632
-            else -> null
-        }
-    }
 }
 
 class PeilomatBL(private val locationProvider: LocationProvider) {
 
     suspend fun getCurrentPosition(targetCRS: CRS) : CurrentPositionData {
         val coordinates = locationProvider.getLocation()
-        val converted = convertLatLonToUTM(coordinates.lat, coordinates.lon, targetCRS)
+        val converted = convertLatLonToTargetCRS(coordinates.lat, coordinates.lon, targetCRS)
         return CurrentPositionData(
             lat = coordinates.lat,
             lon = coordinates.lon,
@@ -63,7 +54,7 @@ class PeilomatBL(private val locationProvider: LocationProvider) {
             UTM32(easting.toInt(), northing.toInt())
         } else {
             val coordinates = locationProvider.getLocation()
-            convertLatLonToUTM(coordinates.lat, coordinates.lon, targetCRS)
+            convertLatLonToTargetCRS(coordinates.lat, coordinates.lon, targetCRS)
         }
 
         val newPoint = calculatePoint(
@@ -81,7 +72,7 @@ fun marschzahlToAngle(mz: Double) : Double {
     return mz * 360.0 / 64.0;
 }
 
-fun convertLatLonToUTM(
+fun convertLatLonToTargetCRS(
     lat: Double,
     lon: Double,
     targetCRS: CRS = CRS.EPSG32632

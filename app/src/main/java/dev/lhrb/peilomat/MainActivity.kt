@@ -2,7 +2,6 @@ package dev.lhrb.peilomat
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.graphics.Paint
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -19,7 +18,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
@@ -80,7 +81,7 @@ class MainActivity : ComponentActivity() {
                                 titleContentColor = MaterialTheme.colorScheme.primary,
                             ),
                             title = {
-                                Text("Peilomat 3000")
+                                Text("Peil-O-Mat 3000")
                             }
                         )
 
@@ -130,7 +131,11 @@ fun Greeting(
 ) {
     val peilomatUiState by viewModel.uiState.collectAsState()
 
-    Column(modifier = modifier.padding(8.dp)) {
+    Column(
+        modifier = modifier
+            .padding(8.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
         ChooseCRS(peilomatUiState.crs, viewModel::setCRS)
 
         HorizontalDivider(
@@ -175,7 +180,14 @@ fun ChooseCRS(
 ) {
     val isDropDownExpanded = remember { mutableStateOf(false) }
     val itemPosition = remember { mutableIntStateOf(0) }
-    val crs = listOf(CRS.EPSG32632, CRS.EPSG31468)
+    val crs = listOf(
+        CRS.EPSG32632,
+        CRS.EPSG31466,
+        CRS.EPSG31467,
+        CRS.EPSG31468,
+        CRS.EPSG31469,
+        CRS.EPSG31470
+    )
 
     itemPosition.intValue = crs.indexOf(currentCrs)
 

@@ -2,14 +2,13 @@ package dev.lhrb.peilomat
 
 import junit.framework.TestCase.assertEquals
 import org.junit.Test
-import kotlin.math.cos
 import kotlin.math.sqrt
 
 class PeilomatBLTest {
 
     @Test
     fun `should convert lat, lon to UTM`()  {
-        val result = convertLatLonToUTM(lat = 50.252751, lon = 7.372818)
+        val result = convertLatLonToTargetCRS(lat = 50.252751, lon = 7.372818)
         assertEquals(384000, result.easting)
         assertEquals(5568000, result.northing)
     }
@@ -40,5 +39,11 @@ class PeilomatBLTest {
         val mz = 32.0
         val result = marschzahlToAngle(mz)
         assertEquals(180.0, result, 0.1)
+    }
+
+    @Test
+    fun `should convert gaus krueger`() {
+        val result = convertLatLonToTargetCRS(lat = 50.487985, lon = 7.477516, CRS.EPSG31466)
+        println(result)
     }
 }
